@@ -1,246 +1,117 @@
-#CODIGO QUE IMPIRME "A"
 from scipy import stats
 import numpy as np
 import math
-import matplotlib.pyplot as plt
-import random
 
 sigmoid = (
-  lambda x:1 / (1 + np.exp(-x)),
-  lambda x:x * (1 - x)
-  )
+    lambda x: 0.9 + 0.1 / (1 + np.exp(-x)),  # Cambio en la función sigmoidal para acercarse a 0.9
+    lambda x: x * (1 - x)
+)
 
 def derivada_relu(x):
-  x[x<=0] = 0
-  x[x>0] = 1
-  return x
+    x[x <= 0] = 0
+    x[x > 0] = 1
+    return x
 
 relu = (
-  lambda x: x * (x > 0),
-  lambda x:derivada_relu(x)
-  )
+    lambda x: x * (x > 0),
+    lambda x: derivada_relu(x)
+)
 
+def circulo(num_datos=100, R=1, minimo=0, maximo=1, latitud=0, longitud=0):
+    pi = np.pi
 
-def circulo(num_datos = 100,R = 1, minimo = 0,maximo= 1):
-  pi = math.pi
-  r = R * np.sqrt(stats.truncnorm.rvs(minimo, maximo, size= num_datos)) * 10
-  theta = stats.truncnorm.rvs(minimo, maximo, size= num_datos) * 2 * pi *10
-  #print(len(r))
-  #print(len(theta))
-  x = np.cos(theta) * r
-  y = np.sin(theta) * r
+    # datos  ubicación especificada
+    r = R * np.sqrt(stats.truncnorm.rvs(minimo, maximo, size=num_datos)) * 10
+    theta = stats.truncnorm.rvs(minimo, maximo, size=num_datos) * 2 * pi * 10
 
-  y = y.reshape((num_datos,1))
-  x = x.reshape((num_datos,1))
+    x = np.cos(theta) * r
+    y = np.sin(theta) * r
 
-  #Vamos a reducir el numero de elementos para que no cause un Overflow
-  x = np.round(x,3)
-  y = np.round(y,3)
+    x = np.round(x + longitud, 3)
+    y = np.round(y + latitud, 3)
 
-  df = np.column_stack([x,y])
-  #print(df)
-  return(df)
-
-#print(len(X))
-#print(len(Y))
-# Numero de neuronas en cada capa.
-# El primer valor es el numero de columnas de la capa de entrada.
-#neuronas = [2,4,8,1]
-
-# Funciones de activacion usadas en cada capa.
-#funciones_activacion = [relu,relu, sigmoid]
-
-#red_neuronal = []
-
-#for paso in range(len(neuronas)-1):
-#  x = capa(neuronas[paso],neuronas[paso+1],funciones_activacion[paso])
-#  print(neuronas[paso],neuronas[paso+1],funciones_activacion[paso])
-
-#  red_neuronal.append(x)
-#  print(x)
-
-#print(red_neuronal)
-
-
-def mse(Ypredich, Yreal):
-
-  # Calculamos el error
-  #print(Ypredich)
-  #print(Yreal)
-  x = (np.array(Ypredich) - np.array(Yreal)) ** 2
-  #print(x)
-  x = np.mean(x)
-  #print(x)
-  # Calculamos la derivada de la funcion
-  y = np.array(Ypredich) - np.array(Yreal)
-  return (x,y)
-
-
-def entrenamiento(epoch, X,Y, red_neuronal, lr = 0.01):
-
-  # Output guardara el resultado de cada capa
-  # En la capa 1, el resultado es el valor de entrada
-  output = [X]
-  for num_capa in range(len(red_neuronal)):
-    z = output[-1] @ red_neuronal[num_capa].W + red_neuronal[num_capa].b
-    #print('z',z)
-    a = red_neuronal[num_capa].funcion_act[0](z)
-    print('ESTO ES A',a)
-    #print(epoch)
-    #if (epoch==0) or (epoch==-999):
-      #print(epoch)
-      #print(red_neuronal[num_capa].funcion_act[0]( np.array([-1, 1]) ))
-      #print(X, X.shape)
-      #print('w', red_neuronal[num_capa].W.shape)
-      #print(red_neuronal[num_capa].W)
-      #print('b', red_neuronal[num_capa].b.shape)
-      #print(red_neuronal[num_capa].b)
-
-      #print('z', z.shape)
-      #print(z)
-      #print('act ', num_capa)
-      #print(a)
-    # Incluimos el resultado de la capa a output
-    output.append(a)
-
-  # Backpropagation
-
-  back = list(range(len(output)-1))
-  back.reverse()
-
-  # Guardaremos el error de la capa en delta
-  delta = []
-
-  for capa in back:
-    # Backprop #delta
-
-    a = output[capa+1]
-    #if (epoch==0) or (epoch==-999):
-   # print('activation', a)
-
-    if capa == back[0]:
-    #  print(capa)
-      x = mse(a,Y)[1] * red_neuronal[capa].funcion_act[1](a)
-      delta.append(x)
-      #if (epoch==0) and (epoch==-999):
-       #print('mse 0', x)
-        #print('mse 01', mse(a,Y)[1] )
-        #print('mse 02', red_neuronal[capa].funcion_act[1](a) )
-        #print('mse 02', red_neuronal[capa].funcion_act[1](np.array([-2, -1, 0, 1, 2])) )
-
-    else:
-     # if (epoch==0) and (capa == back[1]):
-      #  print('function a ', a)
-       # print('delta', delta[-1])
-        #print('W_temp', W_temp)
-
-      x = delta[-1] @ W_temp * red_neuronal[capa].funcion_act[1](a)
-      #if (epoch==0) and (capa == back[1]):
-       # print('x ', x)
-
-      delta.append(x)
-
- #       print('mse 2', x)
-
-    W_temp = red_neuronal[capa].W.transpose()
-    #if (epoch==0) or (epoch==-999):
-    #  print('W_temp', capa, red_neuronal[capa].W, W_temp)
-    # Gradient Descent #
-    red_neuronal[capa].b = red_neuronal[capa].b - np.mean(delta[-1], axis = 0, keepdims = True) * lr
-    red_neuronal[capa].W = red_neuronal[capa].W - output[capa].transpose() @ delta[-1] * lr
-    #if (epoch==0) and (capa==0):
-    #  print('output 0', output[capa].transpose())
-    #  print('delta  0', delta[-1])
-
-    #print(red_neuronal[capa].W)
-    #print('b', capa)
-    #print(red_neuronal[capa].b)
-
-  return output[-1]
+    df = np.column_stack([x, y])
+    return df
 
 class capa():
-  def __init__(self, n_neuronas_capa_anterior, n_neuronas, funcion_act):
-    self.funcion_act = funcion_act
-    #self.b  = np.round(stats.truncnorm.rvs(-1, 1, loc=0, scale=1, size= n_neuronas).reshape(1,n_neuronas),3)
-    #self.W  = np.round(stats.truncnorm.rvs(-1, 1, loc=0, scale=1, size= n_neuronas * n_neuronas_capa_anterior).reshape(n_neuronas_capa_anterior,n_neuronas),3)
-    self.b  = np.full((1,n_neuronas), 0.25).reshape(1,n_neuronas)
-    self.W  = np.full((1,n_neuronas * n_neuronas_capa_anterior), 0.75).reshape(n_neuronas_capa_anterior,n_neuronas)
+    def __init__(self, n_neuronas_capa_anterior, n_neuronas, funcion_act):
+        self.funcion_act = funcion_act
+        self.b = np.round(np.random.rand(1, n_neuronas) * 2 - 1, 3)
+        self.W = np.round(np.random.rand(n_neuronas_capa_anterior, n_neuronas) * 2 - 1, 3)
 
+def mse(Ypredich, Yreal):
+    x = (np.array(Ypredich) - np.array(Yreal)) ** 2
+    x = np.mean(x)
+    y = np.array(Ypredich) - np.array(Yreal)
+    return (x, y)
 
-N=8
+def entrenamiento(epoch, X, Y, red_neuronal, lr=0.01):
+    output = [X]
+    for num_capa in range(len(red_neuronal)):
+        z = output[-1] @ red_neuronal[num_capa].W + red_neuronal[num_capa].b
+        a = red_neuronal[num_capa].funcion_act[0](z)
+        output.append(a)
 
-datos_1 = circulo(num_datos = N, R = 2)
-datos_2 = circulo(num_datos = N, R = 0.5)
-#X = np.concatenate([datos_1,datos_2])
-#X = np.round(X,3)
-#print(X)
-X = np.array([
- [ 23.28778,  -98.804866],
- [ 18.930177, -97.518708],
- [ 20.561914, -98.476285],
- [ 18.799023, -97.970624],
- [ 18.612362, -98.978758],
- [ 19.704731, -95.953922],
- [ 17.587023, -97.997462],
- [ 19.4848,   -98.30177 ],
- [ 41.78367,   12.487411],
- [ 41.583597,  12.006356],
- [ 41.963409,  12.674211],
- [ 41.222153,  11.657711],
- [ 41.783495,  12.765015],
- [ 41.514552,  12.416468],
- [ 42.062541,  12.455104],
- [ 41.685162,  12.705846]
-])
+    back = list(range(len(output)-1))
+    back.reverse()
+    delta = []
 
-Y = [0] * N + [1] * N
-Y = np.array(Y).reshape(len(Y),1)
+    for capa in back:
+        a = output[capa+1]
 
-neuronas = [2,4,8,1]
-funciones_activacion = [relu,relu, sigmoid]
+        if capa == back[0]:
+            x = mse(a, Y)[1] * red_neuronal[capa].funcion_act[1](a)
+            delta.append(x)
+        else:
+            x = delta[-1] @ W_temp * red_neuronal[capa].funcion_act[1](a)
+            delta.append(x)
+
+        W_temp = red_neuronal[capa].W.transpose()
+        red_neuronal[capa].b = red_neuronal[capa].b - np.mean(delta[-1], axis=0, keepdims=True) * lr
+        red_neuronal[capa].W = red_neuronal[capa].W - output[capa].transpose() @ delta[-1] * lr
+
+    return output[-1]
+
+# Numeros solicitados y numeros de epochs 
+N = 200
+epoch =700
+
+# Coordenadas de Tlaxcala y Roma 
+datos_karkaus = circulo(num_datos=N, R=1, latitud=-19.318889, longitud=-98.237778)
+datos_concepcion = circulo(num_datos=N, R=1, latitud=41.9028, longitud=12.4964)
+X = np.concatenate([datos_karkaus, datos_concepcion])
+X = np.round(X, 3)
+
+# Y 
+Y = [0.9] * N + [0.1] * N  # Cambio en los valores de Y para acercarse a 0.9
+Y = np.array(Y).reshape(len(Y), 1)
+
+neuronas = [2, 4, 8, 1]
+funciones_activacion = [relu, relu, sigmoid]
 red_neuronal = []
 
-for paso in list(range(len(neuronas)-1)):
-  x = capa(neuronas[paso],neuronas[paso+1],funciones_activacion[paso])
-  red_neuronal.append(x)
-  #print('w')
-  #print(neuronas[paso])
-  #print(neuronas[paso+1])
+for paso in list(range(len(neuronas) - 1)):
+    x = capa(neuronas[paso], neuronas[paso + 1], funciones_activacion[paso])
+    red_neuronal.append(x)
 
-  #print(x.W)
-  #print('b')
-  #print(x.b)
-  #print('---')
 error = []
 predicciones = []
+for epoch in range(0, 700):  
+    ronda = entrenamiento(epoch, X=X, Y=Y, red_neuronal=red_neuronal, lr=0.001)
+    predicciones.append(ronda)
+    temp = mse(np.round(predicciones[-1]), Y)[0]
+    error.append(temp)
 
-for epoch in range(0,1):
-  ronda = entrenamiento(epoch, X = X ,Y = Y ,red_neuronal = red_neuronal, lr = 0.001)
-  #print('-----')
-  #print(ronda)
-  #print(Y)
-  predicciones.append(ronda)
-  temp = mse(np.round(predicciones[-1]),Y)[0]
-  #print(temp)
-  #print('-----')
-  error.append(temp)
-
-#print('===final Y1 =====')
-#print(predicciones[-1][0:N])
-#print('===final Y2 =====')
-#print(predicciones[-1][N:N*2])
-
-#print(Y)
-#print('w')
-#print(red_neuronal[-2].W)
-#print('b')
-#print(red_neuronal[-2].b)
-
-#print('w')
-#print(red_neuronal[-3].W)
-#print('b')
-#print(red_neuronal[-3].b)
-
-#epoch = list(range(0,1))
-#plt.cla()
-#plt.plot(epoch, error)
+print('===final Y1 =====')
+print(predicciones[-1][0:N])
+print('===final Y2 =====')
+print(predicciones[-1][N:N * 2])
+print('w')
+print(red_neuronal[-2].W)
+print('b')
+print(red_neuronal[-2].b)
+print('________')
+print('w')
+print(red_neuronal[-3].W)
+print('b')
+print(red_neuronal[-3].b)
