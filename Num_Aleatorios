@@ -1,0 +1,133 @@
+# generar puntos aleatorios
+import pandas as pd
+import numpy as np
+#import streamlit as st
+
+# Definición de funciones de activación para la red neuronal
+sigmoid = (
+    lambda x: 1 / (1 + np.exp(-x)),
+    lambda x: x * (1 - x)
+)
+
+def derivada_relu(x):
+    x[x <= 0] = 0
+    x[x > 0] = 1
+    return x
+
+relu = (
+    lambda x: x * (x > 0),
+    lambda x: derivada_relu(x)
+)
+
+# Función para generar puntos en un círculo alrededor de un centro dado
+def circulo(num_datos=200, R=1, centro_lat=0, centro_lon=0):
+    pi = np.pi
+    theta = np.random.uniform(0, 2 * pi, size=num_datos)
+
+    # Genera valores positivos para el radio
+    r_positive = np.abs(R * np.sqrt(np.random.normal(0, 1, size=num_datos)**2))
+
+    # Calcula las coordenadas x e y
+    x = np.cos(theta) * r_positive + centro_lon
+    y = np.sin(theta) * r_positive + centro_lat
+
+    # Ajusta la precisión de las coordenadas
+    x = np.round(x, 6)
+    y = np.round(y, 6)
+
+    # Crea un DataFrame con las coordenadas
+    df = pd.DataFrame({'lat': y, 'lon': x})
+    return df
+
+# Función de error medio cuadrático
+def mse(Ypredich, Yreal):
+    x = (np.array(Ypredich) - np.array(Yreal)) ** 2
+    x = np.mean(x)
+    y = np.array(Ypredich) - np.array(Yreal)
+    return x, y
+
+# Función de entrenamiento de la red neuronal
+def entrenamiento(epoch, X, Y, red_neuronal, lr=0.01):
+    output = [X]
+    for num_capa in range(len(red_neuronal)):
+        z = output[-1] @ red_neuronal[num_capa].W + red_neuronal[num_capa].b
+        a = red_neuronal[num_capa].funcion_act[0](z)
+        output.append(a)
+
+    back = list(range(len(output)-1))
+    back.reverse()
+    delta = []
+
+    for capa in back:
+        a = output[capa+1]
+        if capa == back[0]:
+            x = mse(a, Y)[1] * red_neuronal[capa].funcion_act[1](a)
+            delta.append(x)
+        else:
+            x = delta[-1] @ W_temp * red_neuronal[capa].funcion_act[1](a)
+            delta.append(x)
+
+        W_temp = red_neuronal[capa].W.transpose()
+        red_neuronal[capa].b = red_neuronal[capa].b - np.mean(delta[-1], axis=0, keepdims=True) * lr
+        red_neuronal[capa].W = red_neuronal[capa].W - output[capa].transpose() @ delta[-1] * lr
+
+    return output[-1]
+
+# Clase que define una capa de la red neuronal
+class capa():
+    def __init__(self, n_neuronas_capa_anterior, n_neuronas, funcion_act):
+        self.funcion_act = funcion_act
+        #self.b = np.round(np.random.uniform(-1, 1, size=(1, n_neuronas)), 6)
+        #self.W = np.round(np.random.uniform(-1, 1, size=(n_neuronas_capa_anterior, n_neuronas)), 6)
+        self.b  = np.full((1,n_neuronas), 0.25).reshape(1,n_neuronas)
+        self.W  = np.full((1,n_neuronas * n_neuronas_capa_anterior), 0.75).reshape(n_neuronas_capa_anterior,n_neuronas)
+
+# Generación de datos para roma y tlaxcala
+N = 8 #16
+# Coordenadas aproximadas de Tlaxcala (19.318889, -98.237778)
+datos_canada = circulo(num_datos=N, R=2, centro_lat=19.318889, centro_lon=-98.237778)
+# Coordenadas aproximadas de Roma  (41.9028, 12.4964)
+datos_india = circulo(num_datos=N, R=0.5, centro_lat=41.9028, centro_lon=12.4964)
+X = np.concatenate([datos_canada, datos_india])
+X = np.round(X, 6)
+
+print(X)
+
+Y = [0] * N + [1] * N
+Y = np.array(Y).reshape(len(Y), 1)
+
+# Configuración de la red neuronal
+neuronas = [2, 4, 8, 1]
+funciones_activacion = [relu, relu, sigmoid]
+red_neuronal = []
+
+for paso in list(range(len(neuronas)-1)):
+    x = capa(neuronas[paso], neuronas[paso+1], funciones_activacion[paso])
+    red_neuronal.append(x)
+
+# Entrenamiento de la red neuronal
+error = []
+predicciones = []
+
+for epoch in range(0, 700):
+    ronda = entrenamiento(epoch, X=X, Y=Y, red_neuronal=red_neuronal, lr=0.001)
+    predicciones.append(ronda)
+    temp = mse(np.round(predicciones[-1]), Y)[0]
+    error.append(temp)
+
+# Visualización en Streamlit
+# Combina los datos de Brasilia y Kazajistán en un solo DataFrame
+map_data = pd.concat([datos_canada, datos_india])
+
+# Crea el título para la aplicación web
+#st.title("Mapa de Tlaxcala y Roma")
+#st.header("Usando Streamlit y Mapbox")
+
+# Muestra ambos países en el mapa
+#st.map(map_data)
+
+
+#print('===final Y1 =====')
+#print(predicciones[-1][0:N])
+#print('===final Y2 =====')
+#print(predicciones[-1][N:N*2])
